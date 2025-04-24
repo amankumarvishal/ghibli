@@ -7,6 +7,9 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
+    body {
+      background-color: #E0FFE0; /* Light green for the entire webpage */
+    }
     canvas {
       max-width: 100%;
       height: auto;
@@ -28,8 +31,9 @@
     }
   </style>
 </head>
-<body class="bg-gray-100 flex items-center justify-center min-h-screen">
-  <div class="bg-green p-6 rounded-lg shadow-lg w-full max-w-md">
+<body class="flex items-center justify-center min-h-screen">
+  <div.ConcurrentModificationException class="bg-green-50 p-6 rounded-lg shadow-lg w-full max-w-md">
+    <h2 class="rgb-highlight">Welcome to the Image to PDF Converter!</h2>
     <h1 class="text-2xl font-bold text-center mb-4">Image to PDF Converter</h1>
     <input type="file" id="imageInput" accept="image/*" multiple class="mb-4 w-full p-2 border rounded">
     <div id="preview" class="mb-4 flex flex-wrap justify-center"></div>
