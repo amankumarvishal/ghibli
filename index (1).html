@@ -1,0 +1,143 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ghibli Art Converter</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    canvas {
+      max-width: 100%;
+      height: auto;
+    }
+  </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+  <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
+    <h1 class="text-2xl font-bold text-center mb-4">Ghibli Art Converter</h1>
+    <input type="file" id="imageInput" accept="image/*" class="mb-4 w-full p-2 border rounded">
+    <button id="convertBtn" class="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600">Convert to Ghibli Style</button>
+    <div id="result" class="mt-4 text-center">
+      <canvas id="canvas"></canvas>
+    </div>
+  </div>
+
+  <script>
+    const imageInput = document.getElementById('imageInput');
+    const convertBtn = document.getElementById('convertBtn');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+    if (!ctx) {
+      alert('Canvas is not supported in your browser.');
+      throw new Error('Canvas not supported');
+    }
+
+    let img = new Image();
+    let isImageLoaded = false;
+
+    imageInput.addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(event) {
+          img.src = event.target.result;
+        };
+        reader.onerror = () => {
+          alert('Failed to read the image file.');
+        };
+        reader.readAsDataURL(file);
+        img.onload = () => {
+          // Scale image if too large (e.g., max 800px width)
+          const maxWidth = 800;
+          let width = img.width;
+          let height = img.height;
+          if (width > maxWidth) {
+            height *= maxWidth / width;
+            width = maxWidth;
+          }
+          canvas.width = width;
+          canvas.height = height;
+          ctx.drawImage(img, 0, 0, width, height);
+          isImageLoaded = true;
+        };
+        img.onerror = () => {
+          alert('Failed to load the image. Please try another file.');
+          isImageLoaded = false;
+        };
+      }
+    });
+
+    convertBtn.addEventListener('click', function() {
+      if (!isImageLoaded) {
+        alert('Please upload and load an image first!');
+        return;
+      }
+
+      try {
+        // Clear canvas
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Draw original image
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+        // Check if filter is supported
+        ctx.filter = 'brightness(1.2) contrast(1.3) saturate(1.5) blur(1px)';
+        if (ctx.filter !== 'none') {
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          // Add Ghibli-like pastel overlay
+          ctx.fillStyle = 'rgba(255, 245, 200, 0.2)';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+        } else {
+          alert('Image filters are not supported in your browser. Using basic effect.');
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          ctx.fillStyle = 'rgba(255, 245, 200, 0.2)';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+      } catch (error) {
+        console.error('Error converting image:', error);
+        alert('Failed to convert image. Please try again.');
+      }
+    });
+  </script>
+</body>
+</html>
